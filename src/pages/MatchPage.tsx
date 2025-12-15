@@ -34,7 +34,9 @@ const MatchPage: React.FC = () => {
                 if (queueErrors || !queueData) throw new Error('Could not fetch queue data.');
                 
                 if (queueData.players) {
-                    const profilePromises = queueData.players.map(owner => client.models.UserProfile.get({ owner }));
+                    const profilePromises = queueData.players
+                        ?.filter((owner): owner is string => owner !== null && owner !== undefined)
+                        .map(owner => client.models.UserProfile.get({ owner }));
                     const profileResults = await Promise.all(profilePromises);
                     const newProfiles = new Map<string, Schema['UserProfile']['type']>();
                     profileResults.forEach(({ data: profile }) => {
@@ -68,8 +70,8 @@ const MatchPage: React.FC = () => {
             return totalElo / team.length;
         };
 
-        const teamA_AvgElo = getTeamAvgElo(queue.teamA);
-        const teamB_AvgElo = getTeamAvgElo(queue.teamB);
+        const teamA_AvgElo = getTeamAvgElo(queue.teamA.filter((id): id is string => id !== null && id !== undefined));
+        const teamB_AvgElo = getTeamAvgElo(queue.teamB.filter((id): id is string => id !== null && id !== undefined));
 
         const expectedScoreA = 1 / (1 + Math.pow(10, (teamB_AvgElo - teamA_AvgElo) / 400));
         const expectedScoreB = 1 / (1 + Math.pow(10, (teamA_AvgElo - teamB_AvgElo) / 400));
@@ -79,7 +81,7 @@ const MatchPage: React.FC = () => {
 
         const updatePromises: Promise<any>[] = [];
 
-        for (const ownerId of queue.teamA) {
+        for (const ownerId of queue.teamA.filter((id): id is string => id !== null && id !== undefined)) {
             const profile = profiles.get(ownerId);
             if (profile && profile.elo) {
                 const newElo = profile.elo + K_FACTOR * (actualScoreA - expectedScoreA);
@@ -90,7 +92,7 @@ const MatchPage: React.FC = () => {
             }
         }
 
-        for (const ownerId of queue.teamB) {
+        for (const ownerId of queue.teamB.filter((id): id is string => id !== null && id !== undefined)) {
             const profile = profiles.get(ownerId);
             if (profile && profile.elo) {
                 const newElo = profile.elo + K_FACTOR * (actualScoreB - expectedScoreB);
@@ -113,8 +115,8 @@ const MatchPage: React.FC = () => {
             // Create the Match record
             await client.models.Match.create({
                 name: queue.name,
-                teamA: queue.teamA,
-                teamB: queue.teamB,
+                teamA: queue.teamA.filter((id): id is string => id !== null && id !== undefined),
+                teamB: queue.teamB.filter((id): id is string => id !== null && id !== undefined),
                 status: 'COMPLETED',
                 winningTeam: winningTeam,
             });
@@ -122,7 +124,7 @@ const MatchPage: React.FC = () => {
             // Archive the queue
             await client.models.Queue.update({
                 id: queue.id,
-                status: 'COMPLETED',
+                status: 'COMPLETED' as any, // Type assertion workaround
             });
             
             // Calculate and update Elo ratings
@@ -156,13 +158,13 @@ const MatchPage: React.FC = () => {
                 <Grid item xs={6}>
                     <Paper sx={{ p: 2 }}>
                         <Typography variant="h5">Team A</Typography>
-                        {queue.teamA?.map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
+                        {queue.teamA?.filter((p): p is string => p !== null && p !== undefined).map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
                     </Paper>
                 </Grid>
                 <Grid item xs={6}>
                     <Paper sx={{ p: 2 }}>
                         <Typography variant="h5">Team B</Typography>
-                        {queue.teamB?.map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
+                        {queue.teamB?.filter((p): p is string => p !== null && p !== undefined).map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
                     </Paper>
                 </Grid>
             </Grid>

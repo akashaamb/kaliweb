@@ -36,7 +36,9 @@ const DraftPage: React.FC = () => {
                 }
                 
                 if (queueData.players) {
-                    const profilePromises = queueData.players.map(owner => client.models.UserProfile.get({ owner }));
+                    const profilePromises = queueData.players
+                        ?.filter((owner): owner is string => owner !== null && owner !== undefined)
+                        .map(owner => client.models.UserProfile.get({ owner }));
                     const profileResults = await Promise.all(profilePromises);
                     const newProfiles = new Map<string, Schema['UserProfile']['type']>();
                     profileResults.forEach(({ data: profile }) => {
@@ -107,9 +109,9 @@ const DraftPage: React.FC = () => {
         try {
             await client.models.Queue.update({
                 id: queue.id,
-                draftPool: queue.draftPool.filter(p => p !== playerOwnerId),
-                teamA: isCaptainA ? [...queue.teamA, playerOwnerId] : queue.teamA,
-                teamB: !isCaptainA ? [...queue.teamB, playerOwnerId] : queue.teamB,
+                draftPool: queue.draftPool.filter((p): p is string => p !== null && p !== undefined).filter(p => p !== playerOwnerId),
+                teamA: isCaptainA ? [...queue.teamA.filter((p): p is string => p !== null && p !== undefined), playerOwnerId] : queue.teamA.filter((p): p is string => p !== null && p !== undefined),
+                teamB: !isCaptainA ? [...queue.teamB.filter((p): p is string => p !== null && p !== undefined), playerOwnerId] : queue.teamB.filter((p): p is string => p !== null && p !== undefined),
                 currentDrafter: nextDrafterId,
                 status: status,
             });
@@ -142,13 +144,13 @@ const DraftPage: React.FC = () => {
                 <Grid item xs={6}>
                     <Paper sx={{ p: 2 }}>
                         <Typography variant="h5">Team {captainAProfile?.username}</Typography>
-                        {queue.teamA?.map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
+                        {queue.teamA?.filter((p): p is string => p !== null && p !== undefined).map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
                     </Paper>
                 </Grid>
                 <Grid item xs={6}>
                     <Paper sx={{ p: 2 }}>
                         <Typography variant="h5">Team {captainBProfile?.username}</Typography>
-                        {queue.teamB?.map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
+                        {queue.teamB?.filter((p): p is string => p !== null && p !== undefined).map(p => <PlayerChip key={p} profile={profiles.get(p)!} />)}
                     </Paper>
                 </Grid>
 
@@ -157,7 +159,7 @@ const DraftPage: React.FC = () => {
                         <Paper sx={{ p: 2, mt: 2 }}>
                             <Typography variant="h5">Draft Pool</Typography>
                             <List>
-                                {queue.draftPool?.map(playerOwnerId => (
+                                {queue.draftPool?.filter((playerOwnerId): playerOwnerId is string => playerOwnerId !== null && playerOwnerId !== undefined).map(playerOwnerId => (
                                     <ListItem key={playerOwnerId} secondaryAction={
                                         isMyTurn && (
                                             <Button variant="contained" onClick={() => handlePickPlayer(playerOwnerId)}>

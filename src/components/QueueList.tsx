@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, Button } from '@mui/material';
+import { Typography, CircularProgress, Paper, List, ListItem, ListItemText, Button } from '@mui/material'; // Removed Box
 import { client } from '../services/api';
 import type { Schema } from '../../amplify/data/resource';
 import { useAuthenticator } from '@aws-amplify/ui-react';
@@ -97,7 +97,9 @@ const QueueList: React.FC = () => {
         try {
             // 1. Fetch all user profiles
             const profiles = await Promise.all(
-                queue.players.map(owner => client.models.UserProfile.get({ owner }))
+                queue.players
+                    ?.filter((owner): owner is string => owner !== null && owner !== undefined) // Filter out nulls
+                    .map(owner => client.models.UserProfile.get({ owner }))
             );
 
             // Filter out any potential nulls and errors
@@ -178,16 +180,16 @@ const QueueList: React.FC = () => {
                                 }}
                                 secondaryAction={
                                     queue.players?.includes(user.userId) ? (
-                                        <Button edge="end" variant="outlined" color="secondary" onClick={() => handleLeaveQueue(queue.id)}>
+                                        <Button variant="outlined" color="secondary" onClick={() => handleLeaveQueue(queue.id)}>
                                             Leave
                                         </Button>
                                     ) : (
                                         queue.players?.length === 8 ? (
-                                            <Button edge="end" variant="contained" color="primary" onClick={() => handleStartMatch(queue)}>
+                                            <Button variant="contained" color="primary" onClick={() => handleStartMatch(queue)}>
                                                 Start Match
                                             </Button>
                                         ) : (
-                                            <Button edge="end" variant="outlined" onClick={() => handleJoinQueue(queue.id)}>
+                                            <Button variant="outlined" onClick={() => handleJoinQueue(queue.id)}>
                                                 Join
                                             </Button>
                                         )

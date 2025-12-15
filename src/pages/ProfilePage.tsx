@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Container, CircularProgress, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Typography, Container, CircularProgress, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'; // Removed Box
 import { client } from '../services/api';
 import type { Schema } from '../../amplify/data/resource';
 

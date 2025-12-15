@@ -1,11 +1,11 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { AuthenticatorProps } from '@aws-amplify/ui-react';
+import { AuthUser } from 'aws-amplify/auth'; // AuthUser is correct
 
 type HeaderProps = {
-  signOut?: AuthenticatorProps['signOut'];
-  user?: AuthenticatorProps['user'];
+  signOut?: () => void; // Corrected type for signOut function
+  user?: AuthUser;
 };
 
 const Header: React.FC<HeaderProps> = ({ signOut, user }) => {

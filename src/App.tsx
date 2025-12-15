@@ -6,7 +6,6 @@ import AppRoutes from './routes';
 import Header from './components/Header';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { Box, Paper } from '@mui/material';
 
 const App: React.FC = () => {
   return (
