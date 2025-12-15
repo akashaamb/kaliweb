@@ -1,17 +1,59 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
 const schema = a.schema({
-  Todo: a
+  // Simpler status enums
+  QueueStatus: a.enum(["WAITING", "DRAFTING", "IN_PROGRESS"]),
+  MatchStatus: a.enum(["IN_PROGRESS", "COMPLETED"]),
+
+  UserProfile: a
     .model({
-      content: a.string(),
+      // owner is the user's cognito sub. Using it as the primary key.
+      owner: a.string().required(),
+      username: a.string().required(),
+      elo: a.integer().default(1000),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    // Defining owner as the primary key for this model.
+    .identifier(["owner"])
+    .authorization((allow) => [
+      // The owner of the profile can do anything to it.
+      allow.owner(),
+      // Any authenticated user can read other user profiles.
+      allow.authenticated("userPools").to(["read"]),
+    ]),
+
+  Queue: a
+    .model({
+      // Using a more flexible, non-relational approach by storing arrays of IDs.
+      name: a.string().required(),
+      players: a.string().array(), // Array of UserProfile 'owner' IDs
+      status: a.ref("QueueStatus"),
+      
+      // Draft fields storing 'owner' IDs
+      teamACaptain: a.string(),
+      teamBCaptain: a.string(),
+      draftPool: a.string().array(),
+      teamA: a.string().array(),
+      teamB: a.string().array(),
+      currentDrafter: a.string(),
+    })
+    .authorization((allow) => [
+      // Any authenticated user can perform any action on Queues.
+      allow.authenticated("userPools"),
+    ]),
+
+  Match: a
+    .model({
+      // Storing player IDs in string arrays.
+      name: a.string(),
+      teamA: a.string().array(),
+      teamB: a.string().array(),
+      status: a.ref("MatchStatus"),
+      winningTeam: a.string(), // "A" or "B"
+    })
+    .authorization((allow) => [
+      // Any authenticated user can perform any action on Matches.
+      allow.authenticated("userPools"),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -19,39 +61,6 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    // API Key is used for a.allow.public() rules
-    apiKeyAuthorizationMode: {
-      expiresInDays: 30,
-    },
+    defaultAuthorizationMode: "userPool",
   },
 });
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
